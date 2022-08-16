@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.store.daydayup.bean.ObjectEntity;
+import net.store.daydayup.constant.CommonData;
 import net.store.daydayup.dao.ObjectDao;
 import net.store.daydayup.service.ObjectService;
 import net.store.daydayup.util.HttpUtil;
@@ -20,9 +21,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ObjectServiceImpl implements ObjectService {
 
-    String listStockUrl="http://17.push2.eastmoney.com/api/qt/clist/get?cb=jQuery1124049501677394074295_1655813740688&pn=${pageNum}&pz=${pageSize}&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&wbp2u=|0|0|0|web&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152&_=1655813740755";
     final static String pre="jQuery1124049501677394074295_1655813740688";
-    String zttjUrl = "http://push2ex.eastmoney.com/getTopicZTPool?cb=callbackdata7452717&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt&Pageindex=0&pagesize=170&sort=zttj%3Adesc&date=20220621&_=1655817396514";
     @Autowired
     private ObjectDao objectDao;
 
@@ -40,7 +39,7 @@ public class ObjectServiceImpl implements ObjectService {
         int pageSize = 1000;
         int pageIndex = 1;
         for(;;){
-            String newUrl = listStockUrl.replace("${pageNum}",pageIndex+"");
+            String newUrl = CommonData.listStockUrl.replace("${pageNum}",pageIndex+"");
             newUrl = newUrl.replace("${pageSize}",pageSize+"");
             String respData = getStockData(HttpUtil.submitGet(newUrl));
             ObjectMapper objectMapper = new ObjectMapper();
@@ -48,7 +47,7 @@ public class ObjectServiceImpl implements ObjectService {
                 JsonNode jsonNode = objectMapper.readValue(respData, JsonNode.class);
                 JsonNode dataNode = jsonNode.get("data");
                 if(dataNode==null||"null".equals(dataNode)){
-                    break;
+                    return;
                 }else{
                     pageIndex ++ ;
                 }
