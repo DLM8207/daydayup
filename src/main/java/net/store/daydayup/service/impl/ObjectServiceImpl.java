@@ -46,7 +46,7 @@ public class ObjectServiceImpl implements ObjectService {
             try {
                 JsonNode jsonNode = objectMapper.readValue(respData, JsonNode.class);
                 JsonNode dataNode = jsonNode.get("data");
-                if(dataNode==null||"null".equals(dataNode)){
+                if(dataNode==null||"null".equals(dataNode)||dataNode.isNull()){
                     return;
                 }else{
                     pageIndex ++ ;
