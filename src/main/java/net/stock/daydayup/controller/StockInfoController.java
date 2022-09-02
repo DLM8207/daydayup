@@ -5,12 +5,11 @@ package net.stock.daydayup.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import net.stock.daydayup.bean.ObjectEntity;
+import net.stock.daydayup.service.EasyMoneyApiService;
 import net.stock.daydayup.service.ObjectService;
+import net.stock.daydayup.service.SouhuStockService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +25,10 @@ public class StockInfoController {
 
     @Autowired
     ObjectService objectService;
+    @Autowired
+    SouhuStockService souhuStockService;
+    @Autowired
+    EasyMoneyApiService easyMoneyApiService;
 
     @GetMapping("/list")
     public List<ObjectEntity> listStock(){
@@ -36,6 +39,18 @@ public class StockInfoController {
     @PostMapping("/tag")
     public String updateStockTag(){
         objectService.refreshStockTag();
+        return "Ok";
+    }
+
+    @PostMapping("/download/sohu/{year}")
+    public String downLoadStockValue(@PathVariable int year){
+        souhuStockService.downloadHistoryData(year);
+        return "Ok";
+    }
+
+    @PostMapping("/download/now")
+    public String downloadNowData(){
+        easyMoneyApiService.downloadTodayValue();
         return "Ok";
     }
 

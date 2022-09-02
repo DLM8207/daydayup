@@ -8,10 +8,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
+import java.net.*;
 import java.util.Map;
 
 public class HttpUtil {
@@ -126,6 +123,63 @@ public class HttpUtil {
 
 		}
 		return responseMessage;
+	}
+
+	/**
+	 * 超时，重试请求
+	 * @param strUrl
+	 * @param timeout
+	 * @param retrytimes
+	 * @return
+	 */
+	public static String submitGet(String strUrl,int timeout,int retrytimes){
+		URLConnection connection = null;
+		BufferedReader reader = null;
+		String str = null;
+		try {
+			System.out.println("com.ctwing.scep.aep.adapter.util.HttpUtil.submitGet:url="+strUrl);
+			while(retrytimes>0) {
+				try {
+					URL url = new URL(strUrl);
+					connection = url.openConnection();
+					connection.setDoInput(true);
+					connection.setDoOutput(false);
+					connection.setConnectTimeout(timeout);
+					connection.setReadTimeout(timeout);
+					// 取得输入流，并使用Reader读取
+					reader = new BufferedReader(new InputStreamReader(
+							connection.getInputStream(), "UTF-8"));
+					String lines;
+					StringBuffer linebuff = new StringBuffer("");
+					while ((lines = reader.readLine()) != null) {
+						linebuff.append(lines);
+					}
+					str = linebuff.toString();
+					System.out.println("com.ctwing.scep.aep.adapter.util.HttpUtil.submitGet:url=" + str);
+					//跳出循环
+					retrytimes = 0;
+				} catch (SocketTimeoutException te) {
+					retrytimes--;
+				}finally {
+					try {
+						if(reader!=null)
+							reader.close();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if(reader!=null)
+					reader.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return str;
 	}
 
 	/**
