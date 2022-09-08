@@ -9,12 +9,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.stock.daydayup.dao.ConceptDao;
 import net.stock.daydayup.bean.ConceptEntity;
 import net.stock.daydayup.constant.CommonData;
+import net.stock.daydayup.repository.ConceptRepository;
 import net.stock.daydayup.service.ConceptService;
 import net.stock.daydayup.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * @author:dailm
@@ -25,6 +27,8 @@ public class ConceptServiceImpl implements ConceptService {
 
     @Autowired
     private ConceptDao conceptDao;
+    @Autowired
+    private ConceptRepository conceptRepository;
 
     @Override
     public ConceptEntity save(ConceptEntity entity) {
@@ -40,6 +44,7 @@ public class ConceptServiceImpl implements ConceptService {
     public void downloadConcept() {
         int pageSize = 1000;
         int pageIndex = 1;
+        List<String> listCode = conceptRepository.findAllCode();
         for(;;){
             String newUrl = CommonData.listNotion.replace("${pageNum}",pageIndex+"");
             newUrl = newUrl.replace("${pageSize}",pageSize+"");
@@ -56,6 +61,9 @@ public class ConceptServiceImpl implements ConceptService {
                 for(JsonNode node : dataNode.get("diff")){
                     String code = node.get("f12").asText();
                     String name = node.get("f14").asText();
+                    if(listCode.indexOf(code)!=-1){
+                        continue;
+                    }
                     ConceptEntity conceptEntity = new ConceptEntity();
                     conceptEntity.setCode(code);
                     conceptEntity.setName(name);

@@ -9,12 +9,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.stock.daydayup.bean.AreaEntity;
 import net.stock.daydayup.constant.CommonData;
 import net.stock.daydayup.dao.AreaDao;
+import net.stock.daydayup.repository.AreaRepository;
 import net.stock.daydayup.service.AreaService;
 import net.stock.daydayup.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * @author:dailm
@@ -25,11 +27,14 @@ public class AreaServiceImpl implements AreaService {
 
     @Autowired
     private AreaDao areaDao;
+    @Autowired
+    private AreaRepository areaRepository;
 
     @Override
     public void download() {
         int pageSize = 1000;
         int pageIndex = 1;
+        List<String> areaCodeList = areaRepository.findAllCode();
         for(;;){
             String newUrl = CommonData.listArea.replace("${pageNum}",pageIndex+"");
             newUrl = newUrl.replace("${pageSize}",pageSize+"");
@@ -46,6 +51,9 @@ public class AreaServiceImpl implements AreaService {
                 for(JsonNode node : dataNode.get("diff")){
                     String code = node.get("f12").asText();
                     String name = node.get("f14").asText();
+                    if(areaCodeList.indexOf(code)!=-1){
+                        continue;
+                    }
                     AreaEntity areaEntity = new AreaEntity();
                     areaEntity.setCode(code);
                     areaEntity.setName(name);

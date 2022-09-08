@@ -9,12 +9,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.stock.daydayup.bean.IndustryEntiry;
 import net.stock.daydayup.constant.CommonData;
 import net.stock.daydayup.dao.IndustryDao;
+import net.stock.daydayup.repository.IndustryRepository;
 import net.stock.daydayup.service.IndustryService;
 import net.stock.daydayup.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 /**
  * @author:dailm
@@ -25,11 +27,14 @@ public class IndustryServiceImpl implements IndustryService {
 
     @Autowired
     private IndustryDao industryDao;
+    @Autowired
+    private IndustryRepository industryRepository;
 
     @Override
     public void download() {
         int pageSize = 1000;
         int pageIndex = 1;
+        List<String> listCode = industryRepository.findAllCode();
         for(;;){
             String newUrl = CommonData.listIndustry.replace("${pageNum}",pageIndex+"");
             newUrl = newUrl.replace("${pageSize}",pageSize+"");
@@ -46,6 +51,9 @@ public class IndustryServiceImpl implements IndustryService {
                 for(JsonNode node : dataNode.get("diff")){
                     String code = node.get("f12").asText();
                     String name = node.get("f14").asText();
+                    if(listCode.indexOf(code)!=-1){
+                        continue;
+                    }
                     IndustryEntiry industryEntiry = new IndustryEntiry();
                     industryEntiry.setCode(code);
                     industryEntiry.setName(name);

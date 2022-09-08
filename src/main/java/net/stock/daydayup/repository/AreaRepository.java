@@ -6,6 +6,7 @@ package net.stock.daydayup.repository;
 import net.stock.daydayup.bean.AreaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -17,4 +18,6 @@ import java.util.List;
 public interface AreaRepository extends JpaRepository<AreaEntity,Integer>, JpaSpecificationExecutor<AreaEntity> {
     List<AreaEntity> findByCodeLike(String code);
     List<AreaEntity> findByName(String name);
+    @Query(value = "select code from area",nativeQuery = true)
+    List<String> findAllCode();
 }

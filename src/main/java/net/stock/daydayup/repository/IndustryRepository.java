@@ -6,6 +6,7 @@ package net.stock.daydayup.repository;
 import net.stock.daydayup.bean.IndustryEntiry;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -15,4 +16,6 @@ import java.util.List;
  */
 public interface IndustryRepository extends JpaRepository<IndustryEntiry,Integer>, JpaSpecificationExecutor<IndustryEntiry> {
     List<IndustryEntiry> findByName(String name);
+    @Query(value = "select code from industry",nativeQuery = true)
+    List<String> findAllCode();
 }

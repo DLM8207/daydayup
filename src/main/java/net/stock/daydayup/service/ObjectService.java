@@ -15,4 +15,9 @@ public interface ObjectService {
     public void refreshStockInfo();
 
     public void refreshStockTag();
+
+    /**
+     * 刷新股票低点
+     */
+    public void refreshLower();
 }

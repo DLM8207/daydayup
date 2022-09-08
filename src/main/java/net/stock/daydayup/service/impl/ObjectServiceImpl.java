@@ -19,8 +19,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author:dailm
@@ -46,6 +48,8 @@ public class ObjectServiceImpl implements ObjectService {
     private IndustryRepository industryRepository;
     @Autowired
     private IndustryObjectRepository industryObjectRepository;
+    @Autowired
+    private StockHeightLowRepository stockHeightLowRepository;
 
     @Override
     public ObjectEntity save(ObjectEntity entity) {
@@ -59,60 +63,102 @@ public class ObjectServiceImpl implements ObjectService {
 
     @Override
     public void refreshStockTag() {
+        ThreadPoolExecutor tpe = new ThreadPoolExecutor(20,200,30, TimeUnit.HOURS, new ArrayBlockingQueue<>(50));
         long count = objectEntityRepository.count();
-        int pageSize = 200;
-        long pageNum = (count % pageSize)+1;
+        int pageSize = 100;
+        long pageNum = count / pageSize;
+        if(count%pageSize!=0){
+            pageNum++;
+        }
+        List<Integer> finsishIndex = new ArrayList<>();
         for(int i=0;i<pageNum;i++){
-            Pageable pageable = PageRequest.of((i+1), pageSize);
-            Page<ObjectEntity> pages = objectEntityRepository.findAll(pageable);
-            if(!pages.isEmpty()){
-                Iterator<ObjectEntity> iterator = pages.iterator();
-                while (iterator.hasNext()){
-                    ObjectEntity objectEntity = iterator.next();
-                    String code = getCode(objectEntity.getCode());
-                    String url = CommonData.stockTopic.replace("${code}",code);
-                    String respData = HttpUtil.submitGet(url);
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    try {
-                        JsonNode respJsonData = objectMapper.readValue(respData,JsonNode.class);
-                        if(!respJsonData.isNull()){
-                            JsonNode ssbk = respJsonData.get("ssbk");
-                            if(!ssbk.isNull()){
-                                Iterator<JsonNode> ssbkIterator = ssbk.iterator();
-                                while (ssbkIterator.hasNext()){
-                                    JsonNode bk = ssbkIterator.next();
-                                    JsonNode bkCode = bk.get("BOARD_CODE");
-                                    String bkCodeStr = "";
-                                    String bkNameStr = "";
-                                    if(!bkCode.isNull()){
-                                        bkCodeStr = bkCode.asText();
-                                    }
-                                    JsonNode bkName = bk.get("BOARD_NAME");
-                                    if(!bkName.isNull()){
-                                        bkNameStr = bkName.asText();
-                                    }
-                                    if(!"".equals(bkCodeStr)){
-                                    }
-                                    if(!"".equals(bkNameStr)){
-                                        //地区板块
-                                        updateArea(bkCodeStr,bkNameStr,objectEntity);
-                                        //概念
-                                        updateConcept(bkCodeStr,bkNameStr,objectEntity);
-                                        //行业
-                                        updateIndustry(bkCodeStr,bkNameStr,objectEntity);
+            final int index = i;
+            tpe.execute(()-> {
+                Pageable pageable = PageRequest.of((index), pageSize);
+                Page<ObjectEntity> pages = objectEntityRepository.findAll(pageable);
+                if (!pages.isEmpty()) {
+                    Iterator<ObjectEntity> iterator = pages.iterator();
+                    while (iterator.hasNext()) {
+                        ObjectEntity objectEntity = iterator.next();
+                        String code = getCode(objectEntity.getCode());
+                        String url = CommonData.stockTopic.replace("${code}", code);
+                        String respData = HttpUtil.submitGet(url);
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        try {
+                            JsonNode respJsonData = objectMapper.readValue(respData, JsonNode.class);
+                            if (!respJsonData.isNull()) {
+                                JsonNode ssbk = respJsonData.get("ssbk");
+                                if (!ssbk.isNull()) {
+                                    Iterator<JsonNode> ssbkIterator = ssbk.iterator();
+                                    while (ssbkIterator.hasNext()) {
+                                        JsonNode bk = ssbkIterator.next();
+                                        JsonNode bkCode = bk.get("BOARD_CODE");
+                                        String bkCodeStr = "";
+                                        String bkNameStr = "";
+                                        if (!bkCode.isNull()) {
+                                            bkCodeStr = bkCode.asText();
+                                        }
+                                        JsonNode bkName = bk.get("BOARD_NAME");
+                                        if (!bkName.isNull()) {
+                                            bkNameStr = bkName.asText();
+                                        }
+                                        if (!"".equals(bkCodeStr)) {
+                                        }
+                                        if (!"".equals(bkNameStr)) {
+                                            //地区板块
+                                            updateArea(bkCodeStr, bkNameStr, objectEntity);
+                                            //概念
+                                            updateConcept(bkCodeStr, bkNameStr, objectEntity);
+                                            //行业
+                                            updateIndustry(bkCodeStr, bkNameStr, objectEntity);
+                                        }
                                     }
                                 }
-                            }
-                            JsonNode hxtc = respJsonData.get("hxtc");
-                            if(!hxtc.isNull()){
+                                JsonNode hxtc = respJsonData.get("hxtc");
+                                if (!hxtc.isNull()) {
 
+                                }
                             }
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
                         }
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
                     }
                 }
-            }
+                finsishIndex.add(index);
+                Collections.sort(finsishIndex);
+                finsishIndex.forEach((item)->{System.out.print(item+" ");});
+            });
+        }
+    }
+
+    @Override
+    public void refreshLower() {
+        ThreadPoolExecutor tpe = new ThreadPoolExecutor(20,200,30, TimeUnit.HOURS, new ArrayBlockingQueue<>(50));
+        long count = objectEntityRepository.count();
+        int pageSize = 100;
+        long pageNum = count / pageSize;
+        if(count%pageSize!=0){
+            pageNum++;
+        }
+        List<Integer> finsishIndex = new ArrayList<>();
+        final Map<String,StockLowHeightEntity> stockLowHeightEntityMap = getStockHeightLowMap();
+        for(int i=0;i<pageNum;i++) {
+            final int index = i;
+            tpe.execute(() -> {
+                Pageable pageable = PageRequest.of((index), pageSize);
+                Page<ObjectEntity> pages = objectEntityRepository.findAll(pageable);
+                if (!pages.isEmpty()) {
+                    Iterator<ObjectEntity> iterator = pages.iterator();
+                    while (iterator.hasNext()) {
+                        ObjectEntity objectEntity = iterator.next();
+                        StockLowHeightEntity stockLowHeightEntity = stockLowHeightEntityMap.get(objectEntity.getCode());
+                        if(stockLowHeightEntity==null){
+                            continue;
+                        }
+
+                    }
+                }
+            });
         }
     }
 
@@ -182,6 +228,7 @@ public class ObjectServiceImpl implements ObjectService {
     private void downLoadAndSave(){
         int pageSize = 1000;
         int pageIndex = 1;
+        List<String> listCode = objectEntityRepository.findAllCode();
         for(;;){
             String newUrl = CommonData.listStockUrl.replace("${pageNum}",pageIndex+"");
             newUrl = newUrl.replace("${pageSize}",pageSize+"");
@@ -198,6 +245,9 @@ public class ObjectServiceImpl implements ObjectService {
                 for(JsonNode node : dataNode.get("diff")){
                     String code = node.get("f12").asText();
                     String name = node.get("f14").asText();
+                    if(listCode.indexOf(code)!=-1){
+                        continue;
+                    }
                     ObjectEntity stock = new ObjectEntity();
                     stock.setCode(code);
                     stock.setName(name);
@@ -221,6 +271,23 @@ public class ObjectServiceImpl implements ObjectService {
             respData = respData.substring(preIndex+pre.length()+1,respData.length()-2);
         }
         return respData;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private Map<String,StockLowHeightEntity> getStockHeightLowMap(){
+        Map<String,StockLowHeightEntity> stringStockLowHeightEntityMap = new HashMap<>();
+        List<StockLowHeightEntity> stockLowHeightEntityList = stockHeightLowRepository.findAll();
+        if(stockLowHeightEntityList!=null&&stockLowHeightEntityList.size()>0){
+            stockLowHeightEntityList.forEach((entity)->{
+                if(stringStockLowHeightEntityMap.get(entity.getStockcode())==null){
+                    stringStockLowHeightEntityMap.put(entity.getStockcode(),entity);
+                }
+            });
+        }
+        return stringStockLowHeightEntityMap;
     }
 
     public static void main(String[] args) {

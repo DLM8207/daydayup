@@ -30,10 +30,15 @@ public class StockInfoController {
     @Autowired
     EasyMoneyApiService easyMoneyApiService;
 
-    @GetMapping("/list")
-    public List<ObjectEntity> listStock(){
+    @GetMapping("/{code}")
+    public String getStock(@PathVariable(name = "code") String code){
+        return "Ok";
+    }
+
+    @GetMapping("/download")
+    public String listStock(){
         objectService.refreshStockInfo();
-        return new ArrayList<ObjectEntity>();
+        return "Ok";
     }
 
     @PostMapping("/tag")

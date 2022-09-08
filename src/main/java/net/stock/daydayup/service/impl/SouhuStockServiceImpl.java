@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -51,7 +52,7 @@ public class SouhuStockServiceImpl implements SouhuStockService {
         for(int i=0;i<pageNum;i++) {
             final int index = i;
             tpe.execute(()->{
-                Pageable pageable = PageRequest.of((index + 1), pageSize);
+                Pageable pageable = PageRequest.of((index), pageSize);
                 Page<SynObjectListEntity> pages = synObjectListRepository.findAll(pageable);
                 if (!pages.isEmpty()) {
                     Iterator<SynObjectListEntity> iterator = pages.iterator();
@@ -109,6 +110,7 @@ public class SouhuStockServiceImpl implements SouhuStockService {
                     }
                 }
                 finsishIndex.add(index);
+                Collections.sort(finsishIndex);
                 finsishIndex.forEach((item)->{System.out.print(item+" ");});
             });
         }
