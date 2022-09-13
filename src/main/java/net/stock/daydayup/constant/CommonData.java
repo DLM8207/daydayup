@@ -67,4 +67,6 @@ public interface CommonData {
     //http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sh603031&scale=30&ma=no&datalen=1023
     //http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz000002&scale=30&ma=20&datalen=1023（增加20周期均价）
 
+    //日期正则表达式
+    static final String dateRegex = "^\\d{4}年\\d{1,2}月\\d{1,2}日";
 }

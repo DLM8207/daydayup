@@ -19,10 +19,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author:dailm
@@ -50,6 +55,8 @@ public class ObjectServiceImpl implements ObjectService {
     private IndustryObjectRepository industryObjectRepository;
     @Autowired
     private StockHeightLowRepository stockHeightLowRepository;
+    @Autowired
+    private RecombineRepository recombineRepository;
 
     @Override
     public ObjectEntity save(ObjectEntity entity) {
@@ -82,9 +89,11 @@ public class ObjectServiceImpl implements ObjectService {
                         ObjectEntity objectEntity = iterator.next();
                         String code = getCode(objectEntity.getCode());
                         String url = CommonData.stockTopic.replace("${code}", code);
-                        String respData = HttpUtil.submitGet(url);
+                        String respData = HttpUtil.submitGet(url,15000,10);
                         ObjectMapper objectMapper = new ObjectMapper();
                         try {
+                            if(respData==null||"".equals(respData))
+                                continue;
                             JsonNode respJsonData = objectMapper.readValue(respData, JsonNode.class);
                             if (!respJsonData.isNull()) {
                                 JsonNode ssbk = respJsonData.get("ssbk");
@@ -116,7 +125,17 @@ public class ObjectServiceImpl implements ObjectService {
                                 }
                                 JsonNode hxtc = respJsonData.get("hxtc");
                                 if (!hxtc.isNull()) {
-
+                                    Iterator<JsonNode> hxtcIterator = hxtc.iterator();
+                                    while (hxtcIterator.hasNext()) {
+                                        JsonNode hxtcItem = hxtcIterator.next();
+                                        String KEY_CLASSIF_CODE = hxtcItem.get("KEY_CLASSIF_CODE").asText();
+                                        String KEY_CLASSIF = hxtcItem.get("KEY_CLASSIF").asText();
+                                        String content = hxtcItem.get("MAINPOINT_CONTENT").asText();
+                                        if("006005".equals(KEY_CLASSIF_CODE)){
+                                            updateConcept(KEY_CLASSIF_CODE,KEY_CLASSIF,objectEntity);
+                                            updateZCCZ(content,objectEntity);
+                                        }
+                                    }
                                 }
                             }
                         } catch (JsonProcessingException e) {
@@ -159,6 +178,31 @@ public class ObjectServiceImpl implements ObjectService {
                     }
                 }
             });
+        }
+    }
+
+    private void updateZCCZ(String content,ObjectEntity objectEntity){
+        Pattern p = Pattern.compile(CommonData.dateRegex);
+        Matcher m = p.matcher(content);
+        DateFormat formatter = DateFormat.getDateInstance(DateFormat.LONG, Locale.CHINA);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            while(m.find()) {
+                String strDate = m.group();
+                java.sql.Date day = new java.sql.Date(formatter.parse(strDate).getTime());
+                RecombineEntity exit = recombineRepository.findByDayAndCode(day, objectEntity.getCode());
+                if (exit != null) {
+                    return;
+                }
+                RecombineEntity recombineEntity = new RecombineEntity();
+                recombineEntity.setCode(objectEntity.getCode());
+                recombineEntity.setContent(content);
+                recombineEntity.setDay(day);
+                recombineEntity.setCreateAt(new java.sql.Date(System.currentTimeMillis()));
+                recombineRepository.save(recombineEntity);
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
     }
 
