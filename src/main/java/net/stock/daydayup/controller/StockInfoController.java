@@ -6,6 +6,7 @@ package net.stock.daydayup.controller;
 import lombok.extern.slf4j.Slf4j;
 import net.stock.daydayup.bean.ObjectEntity;
 import net.stock.daydayup.service.EasyMoneyApiService;
+import net.stock.daydayup.service.HxtcService;
 import net.stock.daydayup.service.ObjectService;
 import net.stock.daydayup.service.SouhuStockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,8 @@ public class StockInfoController {
     SouhuStockService souhuStockService;
     @Autowired
     EasyMoneyApiService easyMoneyApiService;
+    @Autowired
+    HxtcService hxtcService;
 
     @GetMapping("/{code}")
     public String getStock(@PathVariable(name = "code") String code){
@@ -48,7 +51,7 @@ public class StockInfoController {
     }
 
     @PostMapping("/download/sohu/{year}")
-    public String downLoadStockValue(@PathVariable int year){
+    public String downloadStockValue(@PathVariable int year){
         souhuStockService.downloadHistoryData(year);
         return "Ok";
     }
@@ -56,6 +59,12 @@ public class StockInfoController {
     @PostMapping("/download/now")
     public String downloadNowData(){
         easyMoneyApiService.downloadTodayValue();
+        return "Ok";
+    }
+
+    @GetMapping("/download/hxtc")
+    public String downloadHxtc(@RequestParam(name="day",required = false)String day,@RequestParam(name = "code",required = false)String code,@RequestParam(name="keyword",required = false)String keyword){
+        hxtcService.updateHxtc(day,code,keyword);
         return "Ok";
     }
 
