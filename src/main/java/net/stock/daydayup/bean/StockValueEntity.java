@@ -27,6 +27,7 @@ public class StockValueEntity {
     private String id;
     private Date day;
     private String stockcode;
+    private Double price;
     private Double open;
     private Double close;
     private Double height;
@@ -36,5 +37,5 @@ public class StockValueEntity {
     private Double amtIncDec;
     private String turnoverRate;
     private String incDecRate;
-
+    private Double yesClose;
 }

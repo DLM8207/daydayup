@@ -16,6 +16,6 @@ import java.util.List;
  */
 public interface StockValueRepository extends JpaRepository<StockValueEntity,String>, JpaSpecificationExecutor<StockValueEntity> {
 
-    @Query(value = "select day from object_day_value where stockcode=:code and day >=cast(:day as date)",nativeQuery = true)
+    @Query(value = "select day from object_day_value_2022 where stockcode=:code and day >=cast(:day as date)",nativeQuery = true)
     List<String> findDayByCodeAndYear(String code, String day);
 }

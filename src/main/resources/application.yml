@@ -1,10 +1,9 @@
-
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/full_view
-    username: postgres
-    password: 1234qwer!QAZ
-    driver-class-name: org.postgresql.Driver
+  #datasource:
+  #  url: jdbc:postgresql://localhost:5432/full_view
+  #  username: postgres
+  #  password: 1234qwer!QAZ
+  #  driver-class-name: org.postgresql.Driver
   jpa:
     properties:
       hibernate:
@@ -14,6 +13,43 @@ spring:
   thymeleaf:
     cache: false
 
+  shardingsphere:
+    props:
+      sql:
+        show: true
+    datasource:
+      names: ds0 #,ds1
+      ds0:
+        type: org.apache.commons.dbcp2.BasicDataSource
+        driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://localhost:5432/full_view
+        username: postgres
+        password: 1234qwer!QAZ
+      #ds1:
+      #  type: org.apache.commons.dbcp.BasicDataSource
+      #  driver-class-name: org.postgresql.Driver
+      #  url: jdbc:postgresql://localhost:5432/full_view
+      #  username: postgres
+      #  password: 1234qwer!QAZ
+    sharding:
+      binding-tables: object_day_value
+      tables:
+        object_day_value:
+          #actual-data-nodes: ds0.object_day_value_{2021..2023}_${(1..12}.collect{t ->t.toString().padLeft(2,'0')}}
+          actualDataNodes: ds0.object_day_value
+          tableStrategy:
+            standard:
+              sharding-column: day
+              shardingAlgorithmName: object-day-value-inline
+              preciseAlgorithmClassName: net.stock.daydayup.config.MyDBPreciseShardingAlgorithm
+      shardingAlgorithms:
+        object-day-value-inline:
+          type: INTERVAL
+          props:
+            datetime-pattern: yyyy-MM-dd #时间格式
+            datetime-lower: 2021-01-01 #最早时间
+            sharding-suffix-pattern: yyyy_MM #分片表的后缀格式
+            datetime-interval-unit: MONTHS #按月分表
 server:
   tomcat:
     access_log_enabled: true
